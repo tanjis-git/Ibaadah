@@ -1,0 +1,67 @@
+---
+import { type CollectionEntry, getCollection } from "astro:content";
+import Layout from "@layouts/Layout.astro";
+import Container from "@components/Container.astro";
+import FormattedDate from "@components/FormattedDate.astro";
+import { readingTime } from "@lib/utils";
+import BackToPrevious from "@components/BackToPrevious.astro";
+import Link from "@components/Link.astro";
+import TableOfContents from "@components/TableOfContents.astro";
+
+export async function getStaticPaths() {
+  const widgets = (await getCollection("widgets"))
+    .filter((post) => !post.data.draft)
+    .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+  return widgets.map((widget) => ({
+    params: { slug: widget.slug },
+    props: widget,
+  }));
+}
+type Props = CollectionEntry<"widgets">;
+
+const widget = Astro.props;
+const { Content, headings } = await widget.render();
+---
+
+<Layout title={widget.data.title} description={widget.data.description}>
+  <Container>
+    <div class="animate">
+      <BackToPrevious href="/widgets">Back to widgets</BackToPrevious>
+    </div>
+    <div class="animate my-10 space-y-1">
+      <div class="flex items-center gap-1.5">
+        <div class="font-base text-sm">
+          <FormattedDate date={widget.data.date} />
+        </div>
+        &bull;
+        <div class="font-base text-sm">
+          {readingTime(widget.body)}
+        </div>
+      </div>
+      <h1 class="text-3xl font-semibold text-black dark:text-white">
+        {widget.data.title}
+      </h1>
+      {
+        (widget.data.demoURL || widget.data.repoURL) && (
+          <nav class="flex gap-1">
+            {widget.data.demoURL && (
+              <Link href={widget.data.demoURL} external>
+                demo
+              </Link>
+            )}
+            {widget.data.demoURL && widget.data.repoURL && <span>/</span>}
+            {widget.data.repoURL && (
+              <Link href={widget.data.repoURL} external>
+                repo
+              </Link>
+            )}
+          </nav>
+        )
+      }
+    </div>
+    <TableOfContents headings={headings} />
+    <article class="animate">
+      <Content />
+    </article>
+  </Container>
+</Layout>
